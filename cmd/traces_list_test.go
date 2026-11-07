@@ -69,6 +69,37 @@ func TestTracesList_JSONPreservesEnvelope(t *testing.T) {
 	}
 }
 
+func TestTracesList_SendsUserIDHeader(t *testing.T) {
+	t.Cleanup(func() {
+		resetTracesListFlags(t)
+		resetTestFlag(rootCmd, "user-id", "")
+	})
+	var got string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got = r.Header.Get("X-GoClaw-User-Id")
+		rawJSON(t, w, traceListFixture())
+	}))
+	defer srv.Close()
+	t.Setenv("GOCLAW_SERVER", srv.URL)
+	t.Setenv("GOCLAW_TOKEN", "test-token")
+	t.Setenv("GOCLAW_OUTPUT", "json")
+	t.Setenv("GOCLAW_USER_ID", "alice")
+
+	if err := runCmd(t, "traces", "list"); err != nil {
+		t.Fatalf("traces list: %v", err)
+	}
+	if got != "alice" {
+		t.Fatalf("env header = %q", got)
+	}
+
+	if err := runCmd(t, "traces", "list", "--user-id", "bob"); err != nil {
+		t.Fatalf("traces list flag: %v", err)
+	}
+	if got != "bob" {
+		t.Fatalf("flag header = %q", got)
+	}
+}
+
 func TestTracesList_ServerFilters(t *testing.T) {
 	t.Cleanup(func() { resetTracesListFlags(t) })
 	var query url.Values

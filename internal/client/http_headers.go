@@ -23,9 +23,7 @@ func (c *HTTPClient) doRawWithHeaders(method, path, contentType string, body io.
 	if contentType != "" {
 		req.Header.Set("Content-Type", contentType)
 	}
-	if c.Token != "" {
-		req.Header.Set("Authorization", "Bearer "+c.Token)
-	}
+	c.applyAuthHeaders(req)
 	for k, v := range headers {
 		if v != "" {
 			req.Header.Set(k, v)

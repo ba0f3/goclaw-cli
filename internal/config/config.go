@@ -16,6 +16,7 @@ type Config struct {
 	OutputFormat        string `yaml:"output"`
 	ProfileOutputFormat string `yaml:"-"`
 	Profile             string `yaml:"profile"`
+	UserID              string `yaml:"-"`
 	TenantID            string `yaml:"-"` // never persisted — flag/env only
 	Insecure            bool   `yaml:"insecure"`
 	Verbose             bool   `yaml:"verbose"`
@@ -29,6 +30,7 @@ type Profile struct {
 	Server       string `yaml:"server"`
 	Token        string `yaml:"-"` // never persisted in config file
 	DefaultAgent string `yaml:"default_agent,omitempty"`
+	UserID       string `yaml:"user_id,omitempty"`
 	OutputFormat string `yaml:"output,omitempty"`
 }
 
@@ -78,6 +80,7 @@ func Load(cmd *cobra.Command) (*Config, error) {
 				cfg.ProfileOutputFormat = p.OutputFormat
 			}
 			cfg.Token = loadStoredToken(p.Name)
+			cfg.UserID = p.UserID
 		} else if shouldRequireProfile(cmd, profileName) {
 			return nil, &ProfileNotFoundError{Name: profileName}
 		}
@@ -90,6 +93,9 @@ func Load(cmd *cobra.Command) (*Config, error) {
 	if v := os.Getenv("GOCLAW_TOKEN"); v != "" {
 		cfg.Token = v
 	}
+	if v := os.Getenv("GOCLAW_USER_ID"); v != "" {
+		cfg.UserID = v
+	}
 	if v := os.Getenv("GOCLAW_OUTPUT"); v != "" {
 		cfg.OutputFormat = v
 	}
@@ -100,6 +106,9 @@ func Load(cmd *cobra.Command) (*Config, error) {
 	}
 	if changed, value := rootOrLocalStringFlag(cmd, "token"); changed {
 		cfg.Token = value
+	}
+	if changed, value := rootOrLocalStringFlag(cmd, "user-id"); changed {
+		cfg.UserID = value
 	}
 	if changed, value := rootOrLocalStringFlag(cmd, "output"); changed {
 		cfg.OutputFormat = value

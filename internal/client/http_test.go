@@ -153,6 +153,27 @@ func TestNonEnvelopeResponse(t *testing.T) {
 	}
 }
 
+func TestGet_SendsIdentityHeaders(t *testing.T) {
+	var userID, tenantID string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userID = r.Header.Get("X-GoClaw-User-Id")
+		tenantID = r.Header.Get("X-GoClaw-Tenant-Id")
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{"ok": true, "payload": map[string]any{"ok": true}})
+	}))
+	defer srv.Close()
+
+	c := NewHTTPClient(srv.URL, "tok", false)
+	c.UserID = "alice"
+	c.TenantID = "tenant-1"
+	if _, err := c.Get("/v1/traces"); err != nil {
+		t.Fatalf("get: %v", err)
+	}
+	if userID != "alice" || tenantID != "tenant-1" {
+		t.Fatalf("headers user=%q tenant=%q", userID, tenantID)
+	}
+}
+
 func TestRetryOn429(t *testing.T) {
 	attempt := 0
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

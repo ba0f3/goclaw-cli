@@ -16,6 +16,7 @@ type HTTPClient struct {
 	BaseURL    string
 	Token      string
 	TenantID   string // X-GoClaw-Tenant-Id header value
+	UserID     string // X-GoClaw-User-Id; an API key owner still wins on the server
 	HTTPClient *http.Client
 	Verbose    bool
 }
@@ -76,12 +77,7 @@ func (c *HTTPClient) PostRaw(path string, contentType string, body io.Reader) (*
 		return nil, err
 	}
 	req.Header.Set("Content-Type", contentType)
-	if c.Token != "" {
-		req.Header.Set("Authorization", "Bearer "+c.Token)
-	}
-	if c.TenantID != "" {
-		req.Header.Set("X-GoClaw-Tenant-Id", c.TenantID)
-	}
+	c.applyAuthHeaders(req)
 	return c.HTTPClient.Do(req)
 }
 
@@ -92,12 +88,7 @@ func (c *HTTPClient) GetRaw(path string) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	if c.Token != "" {
-		req.Header.Set("Authorization", "Bearer "+c.Token)
-	}
-	if c.TenantID != "" {
-		req.Header.Set("X-GoClaw-Tenant-Id", c.TenantID)
-	}
+	c.applyAuthHeaders(req)
 	return c.HTTPClient.Do(req)
 }
 
@@ -147,12 +138,7 @@ func (c *HTTPClient) do(method, path string, body any) (json.RawMessage, error) 
 		if bodyData != nil {
 			req.Header.Set("Content-Type", "application/json")
 		}
-		if c.Token != "" {
-			req.Header.Set("Authorization", "Bearer "+c.Token)
-		}
-		if c.TenantID != "" {
-			req.Header.Set("X-GoClaw-Tenant-Id", c.TenantID)
-		}
+		c.applyAuthHeaders(req)
 
 		resp, err = c.HTTPClient.Do(req)
 		if err != nil {
@@ -201,4 +187,18 @@ func (c *HTTPClient) do(method, path string, body any) (json.RawMessage, error) 
 	}
 
 	return respData, nil
+}
+
+// applyAuthHeaders sets the bearer token and GoClaw identity headers.
+// Empty values are omitted. Callers that pass extra headers can override these.
+func (c *HTTPClient) applyAuthHeaders(req *http.Request) {
+	if c.Token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.Token)
+	}
+	if c.TenantID != "" {
+		req.Header.Set("X-GoClaw-Tenant-Id", c.TenantID)
+	}
+	if c.UserID != "" {
+		req.Header.Set("X-GoClaw-User-Id", c.UserID)
+	}
 }

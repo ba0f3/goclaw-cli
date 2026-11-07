@@ -115,6 +115,7 @@ func testLoadCommand() *cobra.Command {
 	flags.String("output", "", "")
 	flags.String("profile", "", "")
 	flags.String("tenant-id", "", "")
+	flags.String("user-id", "", "")
 	flags.Bool("insecure", false, "")
 	flags.Bool("verbose", false, "")
 	flags.Bool("yes", false, "")
@@ -145,6 +146,42 @@ func TestLoadUsesGOCLAWProfile(t *testing.T) {
 	}
 	if cfg.Profile != "staging" || cfg.Server != "https://staging.example.com" {
 		t.Fatalf("expected staging profile, got profile=%q server=%q", cfg.Profile, cfg.Server)
+	}
+}
+
+func TestLoadUserIDFlagOverridesEnvAndProfile(t *testing.T) {
+	setTestHome(t)
+	if err := Save(Profile{Name: "default", Server: "https://default.example.com", UserID: "from-profile"}, true); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+
+	cfg, err := Load(testLoadCommand())
+	if err != nil {
+		t.Fatalf("load profile: %v", err)
+	}
+	if cfg.UserID != "from-profile" {
+		t.Fatalf("profile user id = %q", cfg.UserID)
+	}
+
+	t.Setenv("GOCLAW_USER_ID", "from-env")
+	cfg, err = Load(testLoadCommand())
+	if err != nil {
+		t.Fatalf("load env: %v", err)
+	}
+	if cfg.UserID != "from-env" {
+		t.Fatalf("env user id = %q", cfg.UserID)
+	}
+
+	cmd := testLoadCommand()
+	if err := cmd.Flags().Set("user-id", "from-flag"); err != nil {
+		t.Fatalf("set flag: %v", err)
+	}
+	cfg, err = Load(cmd)
+	if err != nil {
+		t.Fatalf("load flag: %v", err)
+	}
+	if cfg.UserID != "from-flag" {
+		t.Fatalf("flag user id = %q", cfg.UserID)
 	}
 }
 

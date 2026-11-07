@@ -21,6 +21,7 @@ func newHTTP() (*client.HTTPClient, error) {
 	}
 	c := client.NewHTTPClient(cfg.Server, cfg.Token, cfg.Insecure)
 	c.TenantID = cfg.TenantID
+	c.UserID = cfg.UserID
 	return c, nil
 }
 

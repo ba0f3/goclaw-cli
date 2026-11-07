@@ -496,7 +496,11 @@ goclaw agents list --quiet
 # Environment variables
 export GOCLAW_SERVER=https://goclaw.example.com
 export GOCLAW_TOKEN=your-token
+export GOCLAW_USER_ID=your-user-id
 goclaw agents list
+goclaw traces list
+# one-shot identity header; traces list --user only filters results
+goclaw --user-id your-user-id traces list
 ```
 
 ## Configuration
